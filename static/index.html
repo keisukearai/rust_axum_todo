@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TODO</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 32rem;
+    margin: 3rem auto;
+    padding: 0 1rem;
+    line-height: 1.6;
+  }
+  form { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+  input[type=text] { flex: 1; padding: .5rem; font-size: 1rem; }
+  button { padding: .5rem .9rem; font-size: 1rem; cursor: pointer; }
+  ul { list-style: none; padding: 0; }
+  li {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem 0;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  }
+  li .title { flex: 1; }
+  li.done .title { text-decoration: line-through; opacity: .5; }
+  .empty { opacity: .6; }
+</style>
+</head>
+<body>
+  <h1>TODO</h1>
+
+  <form id="new-todo">
+    <input type="text" id="title" placeholder="やること" autocomplete="off" required>
+    <button type="submit">追加</button>
+  </form>
+
+  <ul id="list"></ul>
+
+<script>
+const list = document.getElementById('list');
+
+async function load() {
+  const todos = await (await fetch('/api/todos')).json();
+  list.innerHTML = '';
+
+  if (todos.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'まだ何もありません';
+    list.append(li);
+    return;
+  }
+
+  for (const todo of todos) {
+    const li = document.createElement('li');
+    if (todo.done) li.classList.add('done');
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = todo.done;
+    check.addEventListener('change', async () => {
+      await fetch(`/api/todos/${todo.id}`, { method: 'POST' });
+      load();
+    });
+
+    const title = document.createElement('span');
+    title.className = 'title';
+    title.textContent = todo.title;
+
+    const del = document.createElement('button');
+    del.textContent = '削除';
+    del.addEventListener('click', async () => {
+      await fetch(`/api/todos/${todo.id}`, { method: 'DELETE' });
+      load();
+    });
+
+    li.append(check, title, del);
+    list.append(li);
+  }
+}
+
+document.getElementById('new-todo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('title');
+  const title = input.value.trim();
+  if (!title) return;
+
+  input.value = '';
+
+  await fetch('/api/todos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  });
+
+  load();
+});
+
+load();
+</script>
+</body>
+</html>
