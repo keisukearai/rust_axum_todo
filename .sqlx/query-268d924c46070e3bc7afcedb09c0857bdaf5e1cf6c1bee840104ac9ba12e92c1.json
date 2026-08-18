@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update todos set done = not done where id = $1 returning id, title, done",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "done",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "268d924c46070e3bc7afcedb09c0857bdaf5e1cf6c1bee840104ac9ba12e92c1"
+}

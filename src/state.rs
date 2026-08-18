@@ -1,11 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use crate::todo::Todo;
+use sqlx::PgPool;
 
-#[derive(Default)]
 pub struct AppState {
-    pub todos: Mutex<Vec<Todo>>,
-    pub next_id: Mutex<u64>,
+    pub pool: PgPool,
 }
 
 pub type SharedState = Arc<AppState>;
