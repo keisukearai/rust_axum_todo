@@ -5,8 +5,8 @@ mod repo;
 pub use model::Todo;
 
 use axum::{
-    routing::{get, post},
     Router,
+    routing::{get, post},
 };
 
 use crate::state::SharedState;

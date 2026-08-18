@@ -1,9 +1,9 @@
 //! HTTP の入口。リクエストを検証して repo を呼ぶ。エラー変換は AppError に任せる。
 
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 
 use super::{model::CreateTodo, repo};

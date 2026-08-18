@@ -1,27 +1,21 @@
-//! ログ出力の初期化。標準出力と `logs/` 配下のファイルの両方に書く。
+//! ログ出力の初期化。標準出力と設定されたディレクトリのファイルの両方に書く。
 
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-/// `RUST_LOG` が未設定のときのログレベル。
-const DEFAULT_FILTER: &str = "todo_app=debug,tower_http=info,sqlx=warn";
+use crate::config::Config;
 
-/// ログ出力先のディレクトリとファイル名の接頭辞。
-/// 実際のファイルは `logs/todo-app.log.YYYY-MM-DD` になる。
-const LOG_DIR: &str = "logs";
-const LOG_PREFIX: &str = "todo-app.log";
+/// ログファイル名の接頭辞。実ファイルは `<log_dir>/todo-app.log.YYYY-MM-DD` になる。
+const FILE_PREFIX: &str = "todo-app.log";
 
 /// 戻り値の `WorkerGuard` は main が終わるまで保持すること。
 /// drop すると書き込みスレッドが止まり、未書き出しのログが失われる。
-pub fn init() -> WorkerGuard {
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER));
-
-    let file_appender = tracing_appender::rolling::daily(LOG_DIR, LOG_PREFIX);
+pub fn init(config: &Config) -> WorkerGuard {
+    let file_appender = tracing_appender::rolling::daily(&config.log_dir, FILE_PREFIX);
     let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::registry()
-        .with(filter)
+        .with(EnvFilter::new(&config.log_filter))
         // 標準出力（色つき）
         .with(tracing_subscriber::fmt::layer())
         // ファイル（色コードは混ぜない）

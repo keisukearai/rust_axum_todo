@@ -1,23 +1,33 @@
+use std::process::ExitCode;
 use std::sync::Arc;
 
 use sqlx::postgres::PgPoolOptions;
 use todo_app::{
-    app, logging,
+    app,
+    config::Config,
+    logging,
     state::{AppState, SharedState},
 };
 
 #[tokio::main]
-async fn main() {
+async fn main() -> ExitCode {
     dotenvy::dotenv().ok();
 
-    // guard を落とすとファイルへの書き出しが止まるので main の最後まで持つ
-    let _log_guard = logging::init();
+    // ログ初期化より前なので、設定エラーは標準エラー出力に直接書く
+    let config = match Config::from_env() {
+        Ok(config) => config,
+        Err(err) => {
+            eprintln!("configuration error: {err}");
+            return ExitCode::FAILURE;
+        }
+    };
 
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
+    // guard を落とすとファイルへの書き出しが止まるので main の最後まで持つ
+    let _log_guard = logging::init(&config);
 
     let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
+        .max_connections(config.max_connections)
+        .connect(&config.database_url)
         .await
         .expect("failed to connect to postgres");
     tracing::info!("connected to postgres");
@@ -30,10 +40,12 @@ async fn main() {
 
     let state: SharedState = Arc::new(AppState { pool });
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let listener = tokio::net::TcpListener::bind(config.bind_addr)
         .await
-        .expect("failed to bind 127.0.0.1:3000");
+        .unwrap_or_else(|err| panic!("failed to bind {}: {err}", config.bind_addr));
 
-    tracing::info!("listening on http://127.0.0.1:3000");
+    tracing::info!(addr = %config.bind_addr, log_dir = %config.log_dir, "listening");
     axum::serve(listener, app(state)).await.unwrap();
+
+    ExitCode::SUCCESS
 }

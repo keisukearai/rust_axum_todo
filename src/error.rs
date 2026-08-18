@@ -1,9 +1,9 @@
 //! アプリ全体のエラー型。HTTP ステータスと JSON ボディへの変換をここに集約する。
 
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Serialize;
 
